@@ -105,4 +105,4 @@ jobs:
           sleep 30
           kubectl get pods 
           kubectl get svc -o wide  
-          
+        
