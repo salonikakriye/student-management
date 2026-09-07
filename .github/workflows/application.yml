@@ -91,6 +91,9 @@ jobs:
       - name: Terraform apply 
         run: terraform apply -auto-approve
 
+      - name: Terraform destroy
+        run: terraform destroy -auto-approve
+
       - name: Install kubectl
         uses: azure/setup-kubectl@v4
         with:
@@ -98,6 +101,9 @@ jobs:
 
       - name: Configure EKS cluster 
         run: aws eks update-kubeconfig --name my-eks-cluster --region ap-south-1
+
+      - name: Delete EKS cluster
+        run: eksctl delete cluster --name my-eks-cluster --region ap-south-1
           
       - name: Deployment On kubernetes
         run: |
