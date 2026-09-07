@@ -50,4 +50,58 @@ jobs:
           echo "Quality Gate: $STATUS"
           [ "$STATUS" = "OK" ] || exit 1
 
+      - name: Docker Build 
+        run: | 
+          docker build -t student . 
+          docker images
+
+      - name: Trivy Install 
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget 
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | \
+            gpg --dearmor | \
+            sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
+          echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | \
+            sudo tee /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install -y trivy
+
+      - name: Scan image using Trivy
+        run: trivy image --scanners vuln --severity HIGH,CRITICAL --exit-code 0 student:latest
+
+      - name: Push image to ECR
+        run: |
+          aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 693906847423.dkr.ecr.ap-south-1.amazonaws.com
+          docker tag student:latest 693906847423.dkr.ecr.ap-south-1.amazonaws.com/student:latest
+          docker push 693906847423.dkr.ecr.ap-south-1.amazonaws.com/student:latest
+
+      - name: Setup Terraform 
+        uses: hashicorp/setup-terraform@v4
+
+      - name: Terraform init
+        run: terraform init
+
+      - name: Terraform fmt 
+        run: terraform fmt
+
+      - name: Terraform validate
+        run: terraform validate
+
+      - name: Terraform apply 
+        run: terraform apply -auto-approve
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: latest
+
+      - name: Configure EKS cluster 
+        run: aws eks update-kubeconfig --name my-eks-cluster --region ap-south-1
           
+      - name: Deployment On kubernetes
+        run: |
+          kubectl apply -f k8s/
+          sleep 30
+          kubectl get pods 
+          kubectl get svc -o wide     
