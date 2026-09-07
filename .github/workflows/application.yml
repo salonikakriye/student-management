@@ -12,3 +12,42 @@ jobs:
     steps:
       - name: checkout Code
         uses: actions/checkout@v5
+
+      - name: setup java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Build Application
+        run: mvn clean package
+
+      - name: Configure aws Credentials
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-south-1
+
+      - name: Push Artifact to S3
+        run: aws s3 cp target/*.war s3://deploywithsaloni.space/student.war
+
+      - name: SonarQube Analysis 
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        run: |
+          mvn sonar:sonar \
+            -Dsonar.token="$SONAR_TOKEN" \
+            -Dsonar.host.url="$SONAR_HOST_URL"
+
+      - name: SonarQube Quality Gates
+        run: |
+          STATUS=$(curl -s -u "${{ secrets.SONAR_TOKEN }}:" \
+            "${{ secrets.SONAR_HOST_URL }}/api/qualitygates/project_status?projectKey=com.school:student-management" \
+            | jq -r '.projectStatus.status')
+          echo "Quality Gate: $STATUS"
+          [ "$STATUS" = "OK" ] || exit 1
+
+          
