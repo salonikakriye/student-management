@@ -11,9 +11,9 @@ terraform {
   }
 
   backend "s3" {
-    bucket       = "mayurcbz.space"
+    bucket       = "deploywithsaloni.space"
     key          = "student-management/eks/terraform.tfstate"
-    region       = "us-west-2"
+    region       = "ap-south-1"
     use_lockfile = true
   }
 }
