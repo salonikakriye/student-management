@@ -104,4 +104,5 @@ jobs:
           kubectl apply -f k8s/
           sleep 30
           kubectl get pods 
-          kubectl get svc -o wide     
+          kubectl get svc -o wide  
+          
